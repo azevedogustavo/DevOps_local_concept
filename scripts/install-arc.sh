@@ -79,6 +79,7 @@ template:
           - --host=unix:///var/run/docker.sock
           - --group=\$(DOCKER_GROUP_GID)
           - --insecure-registry=${HARBOR_REGISTRY}
+          - --insecure-registry=harbor-core.harbor.svc.cluster.local:80
         env:
           - name: DOCKER_GROUP_GID
             value: "123"
