@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: kyverno
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.io
+    chart: kyverno
+    targetRevision: 3.3.4 # ou versão estável recente
+    helm:
+      values: |
+        admissionController:
+          replicas: 1
+          container:
+            extraArgs:
+              allowInsecureRegistry: true
+        backgroundController:
+          replicas: 1
+        cleanupController:
+          replicas: 1
+        reportsController:
+          replicas: 1
+  destination:
+    server: https://default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true # Obrigatório para os CRDs grandes do Kyverno

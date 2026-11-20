@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: TraefikService
+metadata:
+  name: {{ .Release.Name }}-wrr
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  weighted:
+    services:
+      - name: {{ .Release.Name }}-stable
+        port: {{ .Values.service.port }}
+        weight: 100
+      - name: {{ .Release.Name }}-canary
+        port: {{ .Values.service.port }}
+        weight: 0

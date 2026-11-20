@@ -1,13 +1,31 @@
-replicaCount: 1
+replicaCount: 2
 
 image:
-  repository: harbor.local:8080/poc/minha-app
-  tag: "latest"
-  pullPolicy: Always
+  repository: harbor-core.harbor.svc.cluster.local:80/poc/minha-app
+  tag: "inicial" # O pipeline substitui essa linha via sed
+  pullPolicy: IfNotPresent
 
 imagePullSecrets:
-  - name: harbor-pull-secret
+  - name: harbor-registry-secret
 
 service:
   type: ClusterIP
-  port: 8080
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  className: traefik
+  host: minha-app.local
+
+hpa:
+  enabled: true
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+config:
+  APP_ENV: "production"
+
+secrets:
+  API_KEY: "valor-exemplo-poc"
