@@ -2,13 +2,10 @@ FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
-# Baixa as dependências antes de copiar o main.go
-RUN go mod init minha-app && \
-    go get github.com/prometheus/client_golang/prometheus/promhttp
-
 COPY main.go .
 
-RUN go mod tidy && \
+RUN go mod init minha-app && \
+    go mod tidy && \
     CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o app .
 
 FROM gcr.io/distroless/static-debian12:nonroot

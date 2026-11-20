@@ -7,19 +7,20 @@ import (
 	"os"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"://github.com"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
-var (
-	httpRequestsTotal = promauto.NewCounterVec(
-		prometheus.CounterOpts{
-			Name: "http_requests_total",
-			Help: "Total de requisições HTTP recebidas",
-		},
-		[]string{"path"},
-	)
+var httpRequestsTotal = prometheus.NewCounterVec(
+	prometheus.CounterOpts{
+		Name: "http_requests_total",
+		Help: "Total de requisições HTTP recebidas",
+	},
+	[]string{"path"},
 )
+
+func init() {
+	prometheus.MustRegister(httpRequestsTotal)
+}
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
