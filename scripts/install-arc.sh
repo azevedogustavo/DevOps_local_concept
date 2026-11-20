@@ -6,11 +6,12 @@ ARC_RUNNER_NS="arc-runners"
 INSTALLATION_NAME="arc-runner-set"
 SECRET_NAME="github-arc-secret"
 
-GITHUB_CONFIG_URL="https://github.com"
+GITHUB_CONFIG_URL="https://github.com/azevedogustavo/DevOps_local_concept"
 HARBOR_REGISTRY="harbor.local:8080"
+GITHUB_PAT=""
 
-# Captura automaticamente o IP do host na rede do k3d
-HOST_IP=$(docker network inspect k3d-k3s-default -f '{{(index .IPAM.Config 0).Gateway}}' 2>/dev/null || hostname -I | awk '{print $1}')
+# Captura automaticamente o IP do host na rede do k3d (funciona para qualquer nome de cluster)
+HOST_IP=$(docker inspect $(docker ps --filter "label=app=k3d" -q | head -n 1) -f '{{range .NetworkSettings.Networks}}{{.Gateway}}{{end}}' 2>/dev/null || hostname -I | awk '{print $1}')
 echo "==> IP do Host detectado para os runners: ${HOST_IP}"
 
 GITHUB_PAT="${GITHUB_PAT:-SEU_GITHUB_PAT_AQUI}"
@@ -85,6 +86,12 @@ template:
             value: "123"
         securityContext:
           privileged: true
+        startupProbe:
+          exec:
+            command: ["docker", "info"]
+          initialDelaySeconds: 0
+          periodSeconds: 5
+          failureThreshold: 24
         volumeMounts:
           - name: work
             mountPath: /home/runner/_work
@@ -92,6 +99,7 @@ template:
             mountPath: /var/run
           - name: dind-externals
             mountPath: /home/runner/externals
+
 EOF
 
 echo "==> Instalação concluída! O runner já resolve harbor.local e sonar.local via ${HOST_IP}."
