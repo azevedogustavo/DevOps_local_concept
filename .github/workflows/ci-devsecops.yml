@@ -69,12 +69,15 @@ jobs:
 
       - name: 7. Login e Push no Harbor
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          REGISTRY_USER: ${{ secrets.HARBOR_PUSH_USER }}
+          REGISTRY_PASS: ${{ secrets.HARBOR_PUSH_PASSWORD }}
         run: |
-          echo "${{ secrets.HARBOR_PUSH_PASSWORD }}" | docker login "${HARBOR_REGISTRY}" -u "${{ secrets.HARBOR_PUSH_USER }}" --password-stdin
+          printf '%s' "$REGISTRY_PASS" | docker login "${HARBOR_REGISTRY}" -u "$REGISTRY_USER" --password-stdin
           docker push "${IMAGE_TAG}"
           docker tag "${IMAGE_TAG}" "${HARBOR_REGISTRY}/${IMAGE_NAME}:latest"
           docker push "${HARBOR_REGISTRY}/${IMAGE_NAME}:latest"
-
+          
       - name: 8. Instalar Cosign e Assinar Imagem no Harbor
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: sigstore/cosign-installer@v3.8.1

@@ -41,21 +41,25 @@ kubectl create secret generic "${SECRET_NAME}" \
   --from-literal=github_token="${GITHUB_PAT}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
-echo "==> 3. Instalando o Runner Scale Set com DinD, DNS local e Insecure Registry..."
+echo "==> 3. Criando ConfigMap do daemon.json e instalando o Runner Scale Set..."
 kubectl create configmap dind-daemon-config \
   --namespace="${ARC_RUNNER_NS}" \
   --from-literal=daemon.json="{\"insecure-registries\": [\"${HARBOR_REGISTRY}\", \"harbor-core.harbor.svc.cluster.local:80\", \"harbor-core.harbor.svc.cluster.local\"]}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
+# Remove release anterior caso esteja travado em pending-upgrade/failed
+if helm status "${INSTALLATION_NAME}" -n "${ARC_RUNNER_NS}" >/dev/null 2>&1; then
+  echo "==> Limpando release anterior para evitar travamento de geração..."
+  helm uninstall "${INSTALLATION_NAME}" -n "${ARC_RUNNER_NS}"
+  sleep 5
+fi
+
 cat <<EOF | helm upgrade --install "${INSTALLATION_NAME}" \
   --namespace "${ARC_RUNNER_NS}" \
   --values - \
-  oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set \
-  --wait
+  oci://ghcr.io/actions/actions-runner-controller-charts/gha-runner-scale-set
 githubConfigUrl: "${GITHUB_CONFIG_URL}"
 githubConfigSecret: "${SECRET_NAME}"
-containerMode:
-  type: "dind"
 
 template:
   spec:
@@ -80,6 +84,10 @@ template:
             mountPath: /var/run
       - name: dind
         image: docker:dind
+        args:
+          - dockerd
+          - --host=unix:///var/run/docker.sock
+          - --group=123
         env:
           - name: DOCKER_GROUP_GID
             value: "123"
@@ -113,4 +121,4 @@ template:
           name: dind-daemon-config
 EOF
 
-echo "==> Instalação concluída! O runner já resolve harbor.local e sonar.local via ${HOST_IP}."
+echo "==> Instalação concluída! Aguarde ~10s para o pod listener subir e dispare o workflow."
