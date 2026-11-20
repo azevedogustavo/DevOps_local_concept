@@ -1,0 +1,102 @@
+name: CI DevSecOps Pipeline
+
+on:
+  push:
+    branches: [ "main", "dev" ]
+  pull_request:
+    branches: [ "main" ]
+
+env:
+  HARBOR_REGISTRY: harbor.local:8080
+  IMAGE_NAME: poc/minha-app
+  APP_DIR: src/simpleApp
+
+jobs:
+  build-test-scan-push:
+    runs-on: arc-runner-set
+    permissions:
+      contents: write # Necessário para o Step 9 fazer git push no repositório
+    steps:
+      - name: 1. Checkout do código
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Necessário para análise completa do SonarQube
+
+      - name: 2. Executar Testes Unitários e Cobertura (via Docker)
+        run: |
+          docker run --rm -v "${{ github.workspace }}/${{ env.APP_DIR }}":/app -w /app golang:1.26-alpine sh -c "
+            go mod init minha-app &&
+            go get ://github.com &&
+            go test -v -coverprofile=coverage.out ./...
+          "
+
+      - name: 3. Análise Estática (SonarQube)
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+        with:
+          args: >
+            -Dsonar.projectKey=minha-app
+            -Dsonar.sources=${{ env.APP_DIR }}
+            -Dsonar.exclusions=**/*_test.go
+            -Dsonar.tests=${{ env.APP_DIR }}
+            -Dsonar.test.inclusions=**/*_test.go
+            -Dsonar.go.coverage.reportPaths=${{ env.APP_DIR }}/coverage.out
+
+      - name: 4. Limpar arquivos temporários do teste antes do Docker Build
+        run: |
+          rm -f "${{ env.APP_DIR }}/go.mod" "${{ env.APP_DIR }}/go.sum" "${{ env.APP_DIR }}/coverage.out"
+
+      - name: 5. Build da Imagem Docker
+        run: |
+          IMAGE_TAG="${HARBOR_REGISTRY}/${IMAGE_NAME}:${GITHUB_SHA::7}"
+          docker build -t "${IMAGE_TAG}" ./${{ env.APP_DIR }}
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
+
+      - name: 6. Scan de Vulnerabilidades na Imagem (Trivy)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: ${{ env.IMAGE_TAG }}
+          format: 'table'
+          exit-code: '1' # Falha o pipeline se encontrar vulnerabilidades críticas/altas
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+          insecure: true
+
+      - name: 7. Login e Push no Harbor
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "${{ secrets.HARBOR_PASSWORD }}" | docker login "${HARBOR_REGISTRY}" -u "${{ secrets.HARBOR_USERNAME }}" --password-stdin
+          docker push "${IMAGE_TAG}"
+          docker tag "${IMAGE_TAG}" "${HARBOR_REGISTRY}/${IMAGE_NAME}:latest"
+          docker push "${HARBOR_REGISTRY}/${IMAGE_NAME}:latest"
+
+      - name: 8. Instalar Cosign e Assinar Imagem no Harbor
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: sigstore/cosign-installer@v3.7.0
+
+      - name: 9. Assinar Imagem com Cosign
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+        run: |
+          IMAGE_DIGEST=$(docker inspect --format='{{index .RepoDigests 0}}' "${IMAGE_TAG}")
+          echo "${{ secrets.COSIGN_PRIVATE_KEY }}" > cosign.key
+          cosign sign --key cosign.key --allow-insecure-registry --yes "${IMAGE_DIGEST}"
+          rm -f cosign.key
+
+      - name: 10. Atualizar Tag da Imagem para o ArgoCD
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          git pull origin main --rebase
+          sed -i "s|tag: .*|tag: \"${GITHUB_SHA::7}\"|" charts/minha-app/values.yaml
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@://github.com"
+          
+          git add charts/minha-app/values.yaml
+          if ! git diff --staged --quiet; then
+            git commit -m "chore: update image tag to ${GITHUB_SHA::7} [skip ci]"
+            git push origin main
+          fi

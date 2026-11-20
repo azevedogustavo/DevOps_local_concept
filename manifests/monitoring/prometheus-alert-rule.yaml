@@ -1,0 +1,18 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: teste-alerta
+  namespace: monitoring
+  labels:
+    release: monitoring # ESSENCIAL para o Prometheus pegar a regra
+spec:
+  groups:
+  - name: teste
+    rules:
+    - alert: AlertaDeTeste
+      expr: vector(1)
+      for: 1m
+      labels:
+        severity: warning
+      annotations:
+        summary: "Este é um alerta de teste da PoC"
