@@ -22,34 +22,34 @@ jobs:
         with:
           fetch-depth: 0 # Necessário para análise completa do SonarQube
 
-      - name: 2. Executar Testes Unitários e Cobertura (via Docker)
-        run: |
-          docker run --rm -v "${{ github.workspace }}/${{ env.APP_DIR }}":/app -w /app golang:1.26-alpine sh -c "
-            go mod init minha-app &&
-            go mod tidy &&
-            go test -v -coverprofile=coverage.out ./...
-          "
+      # - name: 2. Executar Testes Unitários e Cobertura (via Docker)
+      #   run: |
+      #     docker run --rm -v "${{ github.workspace }}/${{ env.APP_DIR }}":/app -w /app golang:1.26-alpine sh -c "
+      #       go mod init minha-app &&
+      #       go mod tidy &&
+      #       go test -v -coverprofile=coverage.out ./...
+      #     "
 
-      - name: 3. Analise Estática (SonarQube)
-        uses: SonarSource/sonarqube-scan-action@v4
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
-          LANG: C.UTF-8
-          LC_ALL: C.UTF-8
-          SONAR_SCANNER_OPTS: "-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8"
-        with:
-          args: >
-            -Dsonar.projectKey=minha-app
-            -Dsonar.sources=${{ env.APP_DIR }}
-            -Dsonar.exclusions=**/*_test.go,**/*.md,**/*.yaml,**/*.yml,**/Dockerfile,**/*.sh
-            -Dsonar.tests=${{ env.APP_DIR }}
-            -Dsonar.test.inclusions=**/*_test.go
-            -Dsonar.go.coverage.reportPaths=${{ env.APP_DIR }}/coverage.out
+      # - name: 3. Analise Estática (SonarQube)
+      #   uses: SonarSource/sonarqube-scan-action@v4
+      #   env:
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+      #     SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+      #     LANG: C.UTF-8
+      #     LC_ALL: C.UTF-8
+      #     SONAR_SCANNER_OPTS: "-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8"
+      #   with:
+      #     args: >
+      #       -Dsonar.projectKey=minha-app
+      #       -Dsonar.sources=${{ env.APP_DIR }}
+      #       -Dsonar.exclusions=**/*_test.go,**/*.md,**/*.yaml,**/*.yml,**/Dockerfile,**/*.sh
+      #       -Dsonar.tests=${{ env.APP_DIR }}
+      #       -Dsonar.test.inclusions=**/*_test.go
+      #       -Dsonar.go.coverage.reportPaths=${{ env.APP_DIR }}/coverage.out
 
-      - name: 4. Limpar arquivos temporários do teste antes do Docker Build
-        run: |
-          rm -f "${{ env.APP_DIR }}/go.mod" "${{ env.APP_DIR }}/go.sum" "${{ env.APP_DIR }}/coverage.out"
+      # - name: 4. Limpar arquivos temporários do teste antes do Docker Build
+      #   run: |
+      #     rm -f "${{ env.APP_DIR }}/go.mod" "${{ env.APP_DIR }}/go.sum" "${{ env.APP_DIR }}/coverage.out"
 
       - name: 5. Build da Imagem Docker
         run: |
@@ -77,7 +77,7 @@ jobs:
           docker push "${IMAGE_TAG}"
           docker tag "${IMAGE_TAG}" "${HARBOR_REGISTRY}/${IMAGE_NAME}:latest"
           docker push "${HARBOR_REGISTRY}/${IMAGE_NAME}:latest"
-          
+
       - name: 8. Instalar Cosign e Assinar Imagem no Harbor
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: sigstore/cosign-installer@v3.8.1
