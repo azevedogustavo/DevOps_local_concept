@@ -1,0 +1,13 @@
+replicaCount: 1
+
+image:
+  repository: harbor.local:8080/poc/minha-app
+  tag: "latest"
+  pullPolicy: Always
+
+imagePullSecrets:
+  - name: harbor-pull-secret
+
+service:
+  type: ClusterIP
+  port: 8080

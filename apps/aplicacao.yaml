@@ -1,0 +1,18 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: minha-app
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/azevedogustavo/DevOps_local_concept
+    targetRevision: main
+    path: charts/minha-app
+  destination:
+    server: https://default.svc
+    namespace: default
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
