@@ -26,7 +26,7 @@ jobs:
         run: |
           docker run --rm -v "${{ github.workspace }}/${{ env.APP_DIR }}":/app -w /app golang:1.26-alpine sh -c "
             go mod init minha-app &&
-            go get ://github.com &&
+            go mod tidy &&
             go test -v -coverprofile=coverage.out ./...
           "
 
