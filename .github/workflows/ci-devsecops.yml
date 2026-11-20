@@ -39,7 +39,7 @@ jobs:
           args: >
             -Dsonar.projectKey=minha-app
             -Dsonar.sources=${{ env.APP_DIR }}
-            -Dsonar.exclusions=**/*_test.go,**/*.md,**/*.yaml,**/*.yml
+            -Dsonar.exclusions=**/*_test.go,**/*.md,**/*.yaml,**/*.yml,**/Dockerfile,**/*.sh
             -Dsonar.tests=${{ env.APP_DIR }}
             -Dsonar.test.inclusions=**/*_test.go
             -Dsonar.go.coverage.reportPaths=${{ env.APP_DIR }}/coverage.out
