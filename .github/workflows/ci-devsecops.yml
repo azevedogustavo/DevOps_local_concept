@@ -30,7 +30,7 @@ jobs:
             go test -v -coverprofile=coverage.out ./...
           "
 
-      - name: 3. Análise Estática (SonarQube)
+      - name: 3. Analise Estática (SonarQube)
         uses: SonarSource/sonarqube-scan-action@v4
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -39,7 +39,7 @@ jobs:
           args: >
             -Dsonar.projectKey=minha-app
             -Dsonar.sources=${{ env.APP_DIR }}
-            -Dsonar.exclusions=**/*_test.go
+            -Dsonar.exclusions=**/*_test.go,**/*.md,**/*.yaml,**/*.yml
             -Dsonar.tests=${{ env.APP_DIR }}
             -Dsonar.test.inclusions=**/*_test.go
             -Dsonar.go.coverage.reportPaths=${{ env.APP_DIR }}/coverage.out
