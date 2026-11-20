@@ -42,6 +42,11 @@ kubectl create secret generic "${SECRET_NAME}" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 echo "==> 3. Instalando o Runner Scale Set com DinD, DNS local e Insecure Registry..."
+kubectl create configmap dind-daemon-config \
+  --namespace="${ARC_RUNNER_NS}" \
+  --from-literal=daemon.json="{\"insecure-registries\": [\"${HARBOR_REGISTRY}\", \"harbor-core.harbor.svc.cluster.local:80\", \"harbor-core.harbor.svc.cluster.local\"]}" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
 cat <<EOF | helm upgrade --install "${INSTALLATION_NAME}" \
   --namespace "${ARC_RUNNER_NS}" \
   --values - \
@@ -75,12 +80,6 @@ template:
             mountPath: /var/run
       - name: dind
         image: docker:dind
-        args:
-          - dockerd
-          - --host=unix:///var/run/docker.sock
-          - --group=\$(DOCKER_GROUP_GID)
-          - --insecure-registry=${HARBOR_REGISTRY}
-          - --insecure-registry=harbor-core.harbor.svc.cluster.local:80
         env:
           - name: DOCKER_GROUP_GID
             value: "123"
@@ -99,7 +98,19 @@ template:
             mountPath: /var/run
           - name: dind-externals
             mountPath: /home/runner/externals
-
+          - name: dind-config
+            mountPath: /etc/docker/daemon.json
+            subPath: daemon.json
+    volumes:
+      - name: work
+        emptyDir: {}
+      - name: dind-sock
+        emptyDir: {}
+      - name: dind-externals
+        emptyDir: {}
+      - name: dind-config
+        configMap:
+          name: dind-daemon-config
 EOF
 
 echo "==> Instalação concluída! O runner já resolve harbor.local e sonar.local via ${HOST_IP}."
