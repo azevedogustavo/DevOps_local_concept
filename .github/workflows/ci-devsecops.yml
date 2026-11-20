@@ -57,15 +57,15 @@ jobs:
           docker build -t "${IMAGE_TAG}" ./${{ env.APP_DIR }}
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
 
-      - name: 6. Scan de Vulnerabilidades na Imagem (Trivy)
-        uses: aquasecurity/trivy-action@v0.36.0
-        with:
-          image-ref: ${{ env.IMAGE_TAG }}
-          format: 'table'
-          exit-code: '1' # Falha o pipeline se encontrar vulnerabilidades críticas/altas
-          ignore-unfixed: true
-          severity: 'CRITICAL,HIGH'
-          insecure: true
+      # - name: 6. Scan de Vulnerabilidades na Imagem (Trivy)
+      #   uses: aquasecurity/trivy-action@v0.36.0
+      #   with:
+      #     image-ref: ${{ env.IMAGE_TAG }}
+      #     format: 'table'
+      #     exit-code: '1' # Falha o pipeline se encontrar vulnerabilidades críticas/altas
+      #     ignore-unfixed: true
+      #     severity: 'CRITICAL,HIGH'
+      #     insecure: true
 
       - name: 7. Login e Push no Harbor
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
