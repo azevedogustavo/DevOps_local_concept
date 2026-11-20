@@ -7,7 +7,7 @@ on:
     branches: [ "main" ]
 
 env:
-  HARBOR_REGISTRY: harbor.local:8080
+  HARBOR_REGISTRY: harbor-core.harbor.svc.cluster.local:80
   IMAGE_NAME: poc/minha-app
   APP_DIR: src/simpleApp
 
