@@ -77,7 +77,7 @@ jobs:
 
       - name: 8. Instalar Cosign e Assinar Imagem no Harbor
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: sigstore/cosign-installer@v3.7.0
+        uses: sigstore/cosign-installer@v3.8.1
 
       - name: 9. Assinar Imagem com Cosign
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
