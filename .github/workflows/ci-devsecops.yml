@@ -7,7 +7,8 @@ on:
     branches: [ "main" ]
 
 env:
-  HARBOR_REGISTRY: harbor.local:8080
+  #HARBOR_REGISTRY: harbor.local:8080
+  HARBOR_REGISTRY: harbor-core.harbor.svc.cluster.local:80
   IMAGE_NAME: poc/minha-app
   APP_DIR: src/simpleApp
 
@@ -73,7 +74,7 @@ jobs:
           REGISTRY_USER: ${{ secrets.HARBOR_PUSH_USER }}
           REGISTRY_PASS: ${{ secrets.HARBOR_PUSH_PASSWORD }}
         run: |
-          docker info | grep -A 5 "Insecure Registries:"
+          #docker info | grep -A 5 "Insecure Registries:"
           printf '%s' "$REGISTRY_PASS" | docker login "${HARBOR_REGISTRY}" -u "$REGISTRY_USER" --password-stdin
           docker push "${IMAGE_TAG}"
           docker tag "${IMAGE_TAG}" "${HARBOR_REGISTRY}/${IMAGE_NAME}:latest"
