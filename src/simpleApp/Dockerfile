@@ -2,10 +2,11 @@ FROM golang:1.26-alpine AS builder
 
 WORKDIR /app
 
-COPY main.go .
+COPY main.go main_test.go ./
 
 RUN go mod init minha-app && \
     go mod tidy && \
+    go test -v ./... && \
     CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o app .
 
 FROM gcr.io/distroless/static-debian12:nonroot

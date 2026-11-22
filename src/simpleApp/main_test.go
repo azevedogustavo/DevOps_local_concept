@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"://github.com"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func TestHealthzHandler(t *testing.T) {
