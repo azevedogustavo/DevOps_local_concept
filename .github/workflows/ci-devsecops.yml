@@ -23,34 +23,34 @@ jobs:
         with:
           fetch-depth: 0 # Necessário para análise completa do SonarQube
 
-      # - name: 2. Executar Testes Unitários e Cobertura (via Docker)
-      #   run: |
-      #     docker run --rm -v "${{ github.workspace }}/${{ env.APP_DIR }}":/app -w /app golang:1.26-alpine sh -c "
-      #       go mod init minha-app &&
-      #       go mod tidy &&
-      #       go test -v -coverprofile=coverage.out ./...
-      #     "
+      - name: 2. Executar Testes Unitários e Cobertura (via Docker)
+        run: |
+          docker run --rm -v "${{ github.workspace }}/${{ env.APP_DIR }}":/app -w /app golang:1.26-alpine sh -c "
+            go mod init minha-app &&
+            go mod tidy &&
+            go test -v -coverprofile=coverage.out ./...
+          "
 
-      # - name: 3. Analise Estática (SonarQube)
-      #   uses: SonarSource/sonarqube-scan-action@v4
-      #   env:
-      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      #     SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
-      #     LANG: C.UTF-8
-      #     LC_ALL: C.UTF-8
-      #     SONAR_SCANNER_OPTS: "-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8"
-      #   with:
-      #     args: >
-      #       -Dsonar.projectKey=minha-app
-      #       -Dsonar.sources=${{ env.APP_DIR }}
-      #       -Dsonar.exclusions=**/*_test.go,**/*.md,**/*.yaml,**/*.yml,**/Dockerfile,**/*.sh
-      #       -Dsonar.tests=${{ env.APP_DIR }}
-      #       -Dsonar.test.inclusions=**/*_test.go
-      #       -Dsonar.go.coverage.reportPaths=${{ env.APP_DIR }}/coverage.out
+      - name: 3. Analise Estática (SonarQube)
+        uses: SonarSource/sonarqube-scan-action@v4
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ vars.SONAR_HOST_URL }}
+          LANG: C.UTF-8
+          LC_ALL: C.UTF-8
+          SONAR_SCANNER_OPTS: "-Dfile.encoding=UTF-8 -Dsun.jnu.encoding=UTF-8"
+        with:
+          args: >
+            -Dsonar.projectKey=minha-app
+            -Dsonar.sources=${{ env.APP_DIR }}
+            -Dsonar.exclusions=**/*_test.go,**/*.md,**/*.yaml,**/*.yml,**/Dockerfile,**/*.sh
+            -Dsonar.tests=${{ env.APP_DIR }}
+            -Dsonar.test.inclusions=**/*_test.go
+            -Dsonar.go.coverage.reportPaths=${{ env.APP_DIR }}/coverage.out
 
-      # - name: 4. Limpar arquivos temporários do teste antes do Docker Build
-      #   run: |
-      #     rm -f "${{ env.APP_DIR }}/go.mod" "${{ env.APP_DIR }}/go.sum" "${{ env.APP_DIR }}/coverage.out"
+      - name: 4. Limpar arquivos temporários do teste antes do Docker Build
+        run: |
+          rm -f "${{ env.APP_DIR }}/go.mod" "${{ env.APP_DIR }}/go.sum" "${{ env.APP_DIR }}/coverage.out"
 
       - name: 5. Build da Imagem Docker
         run: |
@@ -58,15 +58,15 @@ jobs:
           docker build -t "${IMAGE_TAG}" ./${{ env.APP_DIR }}
           echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV
 
-      # - name: 6. Scan de Vulnerabilidades na Imagem (Trivy)
-      #   uses: aquasecurity/trivy-action@v0.36.0
-      #   with:
-      #     image-ref: ${{ env.IMAGE_TAG }}
-      #     format: 'table'
-      #     exit-code: '1' # Falha o pipeline se encontrar vulnerabilidades críticas/altas
-      #     ignore-unfixed: true
-      #     severity: 'CRITICAL,HIGH'
-      #     insecure: true
+      - name: 6. Scan de Vulnerabilidades na Imagem (Trivy)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ env.IMAGE_TAG }}
+          format: 'table'
+          exit-code: '1' # Falha o pipeline se encontrar vulnerabilidades críticas/altas
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'
+          insecure: true
 
       - name: 7. Login e Push no Harbor
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -98,15 +98,15 @@ jobs:
       - name: 10. Atualizar Tag da Imagem para o ArgoCD
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          git pull origin main --rebase
+          git config pull.rebase true
+          git pull --rebase origin main
           sed -i "s|tag: .*|tag: \"${GITHUB_SHA::7}\"|" charts/minha-app/values.yaml
-          
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          
+
           git add charts/minha-app/values.yaml
           if ! git diff --staged --quiet; then
             git commit -m "chore(cd): update image tag to ${GITHUB_SHA::7} [skip ci]"
             git push origin main
           fi
-

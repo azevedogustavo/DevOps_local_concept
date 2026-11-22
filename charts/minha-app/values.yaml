@@ -1,8 +1,8 @@
 replicaCount: 2
 
 image:
-  repository: harbor.local:8080/poc/minha-app
-  tag: "inicial" # O Step 10 do pipeline atualiza esta linha automaticamente
+  repository: harbor-core.harbor.svc.cluster.local:80/poc/minha-app
+  tag: "9893f83"
   pullPolicy: IfNotPresent
 
 imagePullSecrets:
