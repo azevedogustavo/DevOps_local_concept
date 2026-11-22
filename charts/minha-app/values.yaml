@@ -1,12 +1,12 @@
 replicaCount: 2
 
 image:
-  repository: harbor-core.harbor.svc.cluster.local:80/poc/minha-app
-  tag: "d0f58f4"
+  repository: harbor.local:8080/poc/minha-app
+  tag: "inicial" # O Step 10 do pipeline atualiza esta linha automaticamente
   pullPolicy: IfNotPresent
 
 imagePullSecrets:
-  - name: harbor-registry-secret
+  - name: harbor-pull-secret
 
 service:
   type: ClusterIP
@@ -24,8 +24,16 @@ hpa:
   maxReplicas: 5
   targetCPUUtilizationPercentage: 80
 
-config:
-  APP_ENV: "production"
+resources:
+  requests:
+    cpu: 100m
+    memory: 128Mi
+  limits:
+    cpu: 250m
+    memory: 256Mi
 
-secrets:
-  API_KEY: "valor-exemplo-poc"
+# config:
+#   APP_ENV: "production"
+
+# secrets:
+#   API_KEY: "valor-exemplo-poc"

@@ -1,0 +1,42 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: verify-cosign-signature
+  annotations:
+    policies.kyverno.io/title: Verificar Assinatura Cosign
+    policies.kyverno.io/category: Supply Chain Security
+    policies.kyverno.io/severity: high
+    policies.kyverno.io/description: >-
+      Bloqueia o deploy de imagens do Harbor que não estejam assinadas com a chave Cosign da PoC.
+spec:
+  validationFailureAction: Enforce
+  background: false
+  webhookTimeoutSeconds: 30
+  rules:
+    - name: check-harbor-image-signature
+      match:
+        any:
+          - resources:
+              kinds:
+                - Pod
+              namespaces:
+                - default
+      verifyImages:
+        - imageReferences:
+            - "harbor.local:8080/poc/*"
+          imagePullSecrets:
+            - name: harbor-pull-secret            
+          # Necessário porque o Harbor local roda em HTTP sem TLS
+          insecure: true
+          mutateDigest: true
+          verifyDigest: true
+          required: true
+          attestors:
+            - count: 1
+              entries:
+                - keys:
+                    publicKeys: |-
+                      -----BEGIN PUBLIC KEY-----
+                      MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAELXyPOzoY/uYE2FosG9HNBbeU5gBz
+                      od6t1fyRj70ZRawRX5sxwPLEMr9yEjHf8BKuU74JXInZ2ffwJfoGfqrbRg==
+                      -----END PUBLIC KEY-----

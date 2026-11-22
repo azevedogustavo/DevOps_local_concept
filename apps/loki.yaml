@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.io
+    chart: loki-stack
+    targetRevision: 2.10.2
+    helm:
+      values: |
+        loki:
+          enabled: true
+          isDefault: false
+          persistence:
+            enabled: false # Ideal para PoC local em k3d sem consumir disco extra
+        promtail:
+          enabled: true
+        grafana:
+          enabled: false # Já instalado pelo kube-prometheus-stack
+        prometheus:
+          enabled: false # Já instalado pelo kube-prometheus-stack
+  destination:
+    server: https://default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

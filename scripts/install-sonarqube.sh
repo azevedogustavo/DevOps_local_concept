@@ -71,7 +71,12 @@ echo "  Host: sonarqube-postgresql.${SONAR_NAMESPACE}.svc.cluster.local"
 echo "  User: sonar"
 echo "  Password: ${POSTGRES_PASSWORD}"
 
-### Provávelmente eu vou precisar configurar uma senha e tokens para um projeto tudo por API ou salvar a senha que cria projetos no pipeline
+echo "credencial para ser salva no github"
 
+SONAR_TOKEN=$(kubectl exec -n sonarqube statefulset/sonarqube-sonarqube -- \
+  curl -s -u 'admin:Son@r12345!Admin' -X POST \
+  "http://localhost:9000/api/user_tokens/generate" \
+  -d "name=github-actions-$(date +%s)" \
+  -d "type=GLOBAL_ANALYSIS_TOKEN" | jq -r '.token')
 
-
+echo "Token gerado: ${SONAR_TOKEN}"

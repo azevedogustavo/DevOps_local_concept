@@ -12,10 +12,11 @@ Exigir que imagens usem digest (hash) em vez de tags mutáveis, garantindo imuta
 Prevenir a criação de Pods privilegiados ou que violem os Pod Security Standards .
 
 
-Porqu escolhi Kyverno
+Porque escolhi Kyverno
 
 Use o Kyverno exclusivamente para a verificação de assinatura de imagem.
 
 ## Para o uso do OPA para assinatura, eu tenho esse problema pra enfrentar
 
 O projeto original sigstore/cosign-gatekeeper-provider está arquivado e não é recomendado para produção . A alternativa mantida atualmente é usar o Ratify como provider do Gatekeeper para o Cosign . Isso adiciona mais um componente (Ratify) para instalar, configurar e entender na sua PoC.
+

@@ -91,3 +91,39 @@ manifests/	Manifestos Kubernetes que não fazem parte do chart Helm (políticas,
 src/	Código-fonte da aplicação (frontend, backend, database). Separado do chart para deixar claro o que é código e o que é infraestrutura.
 .github/workflows/	Pipelines do GitHub Actions. O build-image.yml é reutilizável; os demais o chamam ou fazem deploy de infra.
 scripts/	Scripts de automação para reprodutibilidade. O PDF exige "ambiente totalmente reprodutível", e scripts ajudam nisso.
+
+
+Sim, essa é uma boa síntese. Sua PoC tem quatro pilares principais, e o restante são ferramentas que se encaixam dentro deles.
+
+🧱 Os quatro pilares da sua PoC
+Pilar	O que inclui	Onde fica no repositório
+1. Cluster	k3d, Traefik (Ingress), mapeamento de portas, /etc/hosts	scripts/install-k3d.sh, scripts/create-cluster.sh
+2. Bootstrap	Harbor, SonarQube, ArgoCD, ARC (GitHub Runner)	infra/ + scripts/bootstrap.sh
+3. Pipeline (CI/CD)	GitHub Actions, build multi-stage, testes, SonarQube (SAST), Trivy (scan), push Harbor, cosign sign, commit da tag	.github/workflows/
+4. Monitoramento	Prometheus + Grafana (métricas), Loki + Alloy (logs)	apps/monitoring.yaml, apps/loki.yaml
+🧩 O que fica "em volta" desses pilares
+Segurança de admissão (OPA Gatekeeper + Kyverno): não é um pilar separado, é uma camada de política que se aplica ao cluster e às imagens que o pipeline produz. Fica em apps/opa.yaml e apps/kyverno.yaml, gerenciada pelo ArgoCD.
+
+GitOps (ArgoCD + Argo Rollouts): é o mecanismo de entrega que conecta o pipeline ao cluster. O ArgoCD é bootstrap, mas as Applications que ele gerencia ficam em apps/.
+
+Aplicação (front/back/db): é o artefato que o pipeline constrói e o ArgoCD entrega. Fica em src/ e charts/.
+
+🎯 Uma forma mais precisa de descrever
+Sua PoC é, na verdade, um fluxo de entrega de software com quatro estágios:
+
+text
+Cluster → Bootstrap → Pipeline (CI) → GitOps (CD) → Monitoramento
+Cluster: a base onde tudo roda.
+
+Bootstrap: as ferramentas que precisam existir antes do fluxo (Harbor, SonarQube, ArgoCD, ARC).
+
+Pipeline: o que constrói, verifica e assina a imagem.
+
+GitOps: o que entrega a imagem no cluster (ArgoCD + Argo Rollouts).
+
+Monitoramento: o que observa o que foi entregue (Prometheus, Loki, Grafana, Alloy).
+
+A segurança (OPA + Kyverno) atravessa o pipeline e o GitOps: o pipeline assina a imagem, o Kyverno verifica a assinatura na admissão, e o OPA aplica as demais políticas.
+
+Resumindo: você está certa em dizer que a PoC é "cluster, bootstrap, pipeline e monitoramento". O GitOps e a segurança são camadas que conectam e protegem esses pilares, e a aplicação é o que tudo isso entrega.
+

@@ -1,0 +1,57 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring-stack
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.io
+    chart: kube-prometheus-stack
+    targetRevision: 65.1.1
+    helm:
+      values: |
+        grafana:
+          adminPassword: "admin"
+          ingress:
+            enabled: true
+            ingressClassName: traefik
+            hosts:
+              - grafana.local
+          sidecar:
+            datasources:
+              enabled: true
+              label: grafana_datasource
+              labelValue: "1"
+        prometheus:
+          prometheusSpec:
+            # Permite que o Prometheus descubra ServiceMonitors de todos os namespaces
+            serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
+            additionalScrapeConfigs:
+              - job_name: 'kubernetes-services'
+                kubernetes_sd_configs:
+                  - role: service
+                relabel_configs:
+                  - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_scrape]
+                    action: keep
+                    regex: true
+                  - source_labels: [__meta_kubernetes_service_annotation_prometheus_io_path]
+                    action: replace
+                    target_label: __metrics_path__
+                    regex: (.+)
+                  - source_labels: [__address__, __meta_kubernetes_service_annotation_prometheus_io_port]
+                    action: replace
+                    target_label: __address__
+                    regex: ([^:]+)(?::\d+)?;(\d+)
+                    replacement: $1:$2
+  destination:
+    server: https://default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true # Obrigatório para os CRDs grandes do Prometheus Operator

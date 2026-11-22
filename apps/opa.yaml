@@ -1,0 +1,17 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: policies-opa
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://github.com
+    targetRevision: main
+    path: manifests/policies/opa
+  destination:
+    server: https://default.svc
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

@@ -8,6 +8,8 @@ O runtime será docker e não podman devido ele ser experimental e poder ter pro
 
 O Traeffic já está instalado por padrão e o nginx está depreciado para qualquer uma das opções k3d	kind	minikube	RKE2 (VMs)
 
+### [configuraçao cluster com argoCD](./ArgoCD.md)
+
 # Infra do cluster
 ## Usar tanto o OPA quando o Kyverno
 
