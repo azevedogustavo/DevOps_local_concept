@@ -60,3 +60,17 @@ GK_URL=$(printf "%s://%s.%s/%s/%s" "https" "open-policy-agent" "github.io" "gate
 helm repo add gatekeeper "$GK_URL"
 helm repo update
 helm install gatekeeper gatekeeper/gatekeeper --namespace gatekeeper-system --create-namespace
+
+
+
+---
+
+<!-- O erro too many open files que você encontrou é essencialmente um problema de limite de inotify do kernel do host, não com a configuração do Promtail em si. No ambiente k3d, o kernel é compartilhado com sua máquina host (ou com a VM do Docker Desktop), e o valor padrão de fs.inotify.max_user_instances geralmente é apenas 128, o que é facilmente esgotado pelo Promtail ao monitorar arquivos de log.
+
+Solução: Ajustar os Exemplos do Kernel do Host
+Como o k3d executa os nós como contêineres Docker, você precisa modificar a configuração no host (ou na VM do Docker Desktop), não dentro do Pod do Kubernetes. A maneira mais rápida de verificar é executar sysctl fs.inotify.max_user_instances no seu terminal host para ver o valor atual (provavelmente 128).
+
+Ajuste temporário (entra em vigor imediatamente, mas é perdido após reinicialização): -->
+
+sudo sysctl -w fs.inotify.max_user_instances=4096
+sudo sysctl -w fs.inotify.max_user_watches=1048576

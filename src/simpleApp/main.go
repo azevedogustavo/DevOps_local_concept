@@ -24,6 +24,8 @@ func init() {
 
 func rootHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
+		httpRequestsTotal.WithLabelValues("404").Inc()
+		log.Printf("[HTTP] %s %s - 404 Not Found from %s", r.Method, r.URL.Path, r.RemoteAddr)
 		http.NotFound(w, r)
 		return
 	}
@@ -35,11 +37,15 @@ func rootHandler(w http.ResponseWriter, r *http.Request) {
 		version = "v1"
 	}
 
+	log.Printf("[HTTP] %s %s - 200 OK (Version: %s, Remote: %s)", r.Method, r.URL.Path, version, r.RemoteAddr)
+
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	fmt.Fprintf(w, "<h1>Minha App (%s)</h1><p>Aplicação rodando no cluster Kubernetes via Argo CD / Rollouts!</p>", version)
 }
 
 func healthzHandler(w http.ResponseWriter, r *http.Request) {
+	httpRequestsTotal.WithLabelValues("/healthz").Inc()
+	log.Printf("[HEALTHZ] %s %s - 200 OK from %s", r.Method, r.URL.Path, r.RemoteAddr)
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprint(w, "ok")
 }
