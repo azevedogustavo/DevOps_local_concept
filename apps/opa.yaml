@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/seu-usuario/DevOps_local_concept.git
+    repoURL: https://github.com/azevedogustavo/DevOps_local_concept.git
     targetRevision: main
     path: manifests/policies/opa
   destination:

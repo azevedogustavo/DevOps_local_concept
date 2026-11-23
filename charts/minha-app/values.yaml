@@ -1,5 +1,8 @@
 replicaCount: 2
 
+rollout:
+  enabled: true
+
 image:
   repository: harbor-core.harbor.svc.cluster.local:80/poc/minha-app
   tag: "b9cb2ca"

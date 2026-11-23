@@ -1,0 +1,44 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: minha-app-alert-rules
+  namespace: monitoring
+  labels:
+    role: alert-rules
+    release: monitoring # Label OBRIGATÓRIA para o Prometheus Operator carregar a regra
+spec:
+  groups:
+    - name: minha-app.rules
+      rules:
+        # Alerta 1: Diferencial de Teste (dispara em 1 minuto para comprovação em prints)
+        - alert: AlertaDeTestePoC
+          expr: vector(1)
+          for: 1m
+          labels:
+            severity: warning
+            app: minha-app
+          annotations:
+            summary: "Alerta de validação da Prova de Conceito"
+            description: "Este alerta é gerado continuamente para validar o funcionamento do Alertmanager e Prometheus."
+
+        # Alerta 2: Aplicação Indisponível (quando a app cai ou réplicas são 0)
+        - alert: MinhaAppIndisponivel
+          expr: up{job=~".*minha-app.*"} == 0
+          for: 30s
+          labels:
+            severity: critical
+            app: minha-app
+          annotations:
+            summary: "A aplicação Minha-App está fora do ar!"
+            description: "O Prometheus não consegue realizar o scrape do endpoint /metrics da aplicação há mais de 30 segundos."
+
+        # Alerta 3: Queda no Tráfego ou Alta Latência
+        - alert: MinhaAppSemRequisicoes
+          expr: rate(http_requests_total[5m]) == 0
+          for: 5m
+          labels:
+            severity: info
+            app: minha-app
+          annotations:
+            summary: "Nenhuma requisição recebida nos últimos 5 minutos"
+            description: "A aplicação Minha-App não está registrando tráfego HTTP no contador http_requests_total."
