@@ -2,7 +2,7 @@ replicaCount: 2
 
 image:
   repository: harbor-core.harbor.svc.cluster.local:80/poc/minha-app
-  tag: "ed7ed20"
+  tag: "b9cb2ca"
   pullPolicy: IfNotPresent
 
 imagePullSecrets:
