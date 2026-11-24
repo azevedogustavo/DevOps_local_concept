@@ -3,7 +3,7 @@
 **Candidato / Autor**: Gustavo Azevedo  
 **Projeto**: Prova de Conceito – Ambiente Kubernetes Local (DevOps)  
 **Escopo**: Ambiente Kubernetes local, autônomo, reproduzível, sem dependência de Cloud pública  
-**Data**: Novembro de 2026  
+**Duração**: Executado dentro da recomendação de 16 horas úteis  
 
 ---
 
@@ -17,151 +17,109 @@ O ambiente atende a **100% dos requisitos obrigatórios** do edital e entrega **
 
 ---
 
-## 📊 2. Matriz de Conformidade e Entregáveis
+## 📊 2. Matriz de Conformidade com o Edital
 
-| Categoria | Requisito do Edital | Status | Implementação no Projeto |
-| :--- | :--- | :--- | :--- |
-| **Cluster Local** | kind, k3d, minikube ou RKE2 | ✅ **Atendido** | **k3d (K3s)** com 1 Server e 2 Agents |
-| **Ingress** | Ingress funcional | ✅ **Atendido** | **Traefik v3** nativo roteando portas `8080` e `8443` |
-| **Container Registry** | Harbor ou Nexus | ✅ **Atendido** | **Harbor v2** local com projetos e robot accounts |
-| **Aplicação** | Web simples com endpoint `/healthz` | ✅ **Atendido** | Microsserviço **Go 1.26** com `/healthz`, `/` e `/metrics` |
-| **Dockerfile** | Multi-stage build | ✅ **Atendido** | Build Go estático + **Google Distroless non-root** |
-| **Testes** | Testes automatizados | ✅ **Atendido** | Testes unitários Go (`main_test.go`) cobrindo todas as rotas |
-| **Empacotamento** | Chart Helm completo | ✅ **Atendido** | Helm chart com Service, Ingress, HPA, ConfigMap e Secret |
-| **CI/CD** | Jenkins ou GitHub Actions self-hosted | ✅ **Atendido** | **GitHub Actions** orquestrado via **ARC (in-cluster)** |
-| **SAST** | SonarQube | ✅ **Atendido** | **SonarQube Community** + PostgreSQL dedicado |
-| **Scan de Imagem** | Trivy | ✅ **Atendido** | **Trivy** integrado no pipeline e no Harbor |
-| **Métricas** | Prometheus + Grafana | ✅ **Atendido** | **kube-prometheus-stack** com dashboards e scraping ativo |
-| **Logs** | Loki / Promtail | ✅ **Atendido** | **loki-stack** com Promtail coletando de `/var/log/pods` |
-| **Políticas** | Kyverno ou OPA (mínimo: `:latest`) | ✅ **Atendido** | **OPA Gatekeeper** (Rego) bloqueando tags `:latest` |
+Abaixo está o mapeamento detalhado entre as exigências do documento oficial `POC_Kubernetes_localDevOps.md` e as entregas concretizadas no repositório:
+
+| Item do Edital | Requisito Técnico | Status | Implementação Concretizada no Projeto |
+| :--- | :--- | :---: | :--- |
+| **Cluster Local** | kind, k3d, minikube ou RKE2 em VMs | ✅ **Atendido** | **k3d (K3s)** provisionado com 1 Server e 2 Agents em Docker |
+| **Ingress** | Ingress funcional | ✅ **Atendido** | **Traefik v3** nativo roteando portas `8080` (HTTP) e `8443` (HTTPS) |
+| **Registry Local** | Harbor ou Nexus | ✅ **Atendido** | **Harbor v2** local com projetos, scanner Trivy e robot accounts |
+| **Aplicação** | Web simples com endpoint `/healthz` | ✅ **Atendido** | Microsserviço **Go 1.26** com rotas `/`, `/healthz` e `/metrics` |
+| **Dockerfile** | Multi-stage e testes automatizados | ✅ **Atendido** | Multi-stage com **Google Distroless non-root** e testes unitários |
+| **Helm Chart** | Deploy, Service, Ingress, HPA, ConfigMap, Secret | ✅ **Atendido** | Chart `charts/minha-app/` completo com HPA v2 e ServiceMonitor |
+| **CI/CD** | Jenkins ou GitHub Actions self-hosted | ✅ **Atendido** | **GitHub Actions** in-cluster via **Actions Runner Controller (ARC)** |
+| **SAST & Scan** | SonarQube e Trivy | ✅ **Atendido** | **SonarQube Community** + Postgres e **Trivy** no pipeline e no Harbor |
+| **Observabilidade**| Prometheus + Grafana e Loki/Promtail | ✅ **Atendido** | **kube-prometheus-stack** + **loki-stack** com dashboards prontos |
+| **Políticas** | Kyverno ou OPA (proibir `:latest`) | ✅ **Atendido** | **OPA Gatekeeper** (Rego) bloqueando tags `:latest` |
 | **Diferencial 1** | Assinatura e verificação de imagens | 🌟 **Diferencial** | **Cosign** (assinatura por digest) + **Kyverno** (`verifyImages`) |
-| **Diferencial 2** | GitOps com ArgoCD | 🌟 **Diferencial** | **ArgoCD v2.x** com reconciliação contínua e autônoma |
-| **Diferencial 3** | Blue/Green ou Canary Deployment | 🌟 **Diferencial** | **Argo Rollouts** (Canary 20% -> 100%) com **TraefikService** |
-| **Diferencial 4** | Alertas no Grafana ou Prometheus | 🌟 **Diferencial** | **PrometheusRule** configurada e ativa no Prometheus Operator |
+| **Diferencial 2** | GitOps com ArgoCD | 🌟 **Diferencial** | **ArgoCD v2.x** reconciliando o repositório Git continuamente |
+| **Diferencial 3** | Blue/Green ou Canary Deployment | 🌟 **Diferencial** | **Argo Rollouts Canary** (20% $\to$ 100%) integrado ao **TraefikService** |
+| **Diferencial 4** | Alertas no Grafana ou Prometheus | 🌟 **Diferencial** | **PrometheusRule** configurada com alertas de teste e indisponibilidade |
 
 ---
 
 ## 🧠 3. Principais Decisões Técnicas
 
-1. **Adoção do k3d em vez de kind/Minikube**:
-   A escolha do k3d foi estratégica. Por incorporar o Traefik v3 como Ingress Controller nativo, evitamos o overhead de controladores externos e ganhamos a capacidade de usar o CRD `TraefikService` para controle fino de tráfego Canary ponderado (*Weighted Round-Robin*).
-2. **Defesa em Profundidade com OPA e Kyverno**:
-   Em vez de escolher apenas um, empregamos cada ferramenta em sua máxima força:
-   - **OPA Gatekeeper**: Utilizado com regras declarativas em **Rego** para auditar e rejeitar manifestos que violem o uso de tags imutáveis (proibindo `:latest` e exigindo tags semânticas).
+1. **Adoção do k3d em vez de kind ou Minikube**:
+   O k3s embute o **Traefik v3** como Ingress Controller oficial. Isso evitou o deploy de controladores externos e permitiu utilizar o CRD `TraefikService` para controle fino de tráfego Canary ponderado (*Weighted Round-Robin*) sem necessitar de uma Service Mesh pesada (como Istio).
+2. **Defesa em Profundidade com OPA Gatekeeper E Kyverno**:
+   - **OPA Gatekeeper (Rego)**: Empregado para governança de manifestos e conformidade do cluster, rejeitando pods com tag mutável `:latest` ou sem tags explícitas.
    - **Kyverno**: Utilizado para garantir a segurança da cadeia de suprimentos de software (*Supply Chain Security*), inspecionando criptograficamente a assinatura **Cosign** da imagem no momento da admissão do Pod.
 3. **Execução de CI In-Cluster com Actions Runner Controller (ARC)**:
-   Em vez de acoplar o runner diretamente ao sistema operacional do host ou recorrer a um Jenkins pesado, instalamos o ARC dentro do cluster. Os jobs rodam de maneira descartável e efêmera em pods com Docker-in-Docker, comunicando-se internamente com o Harbor e o SonarQube pela rede do cluster.
-4. **Deploy Progressivo (Canary) sem Service Mesh**:
-   A combinação de **Argo Rollouts** com o **Traefik v3** permitiu atingir o padrão ouro de entrega contínua com risco reduzido (Canary de 20% com pausa de validação) sem a necessidade de instalar uma malha de serviços complexa (como Istio), economizando mais de 2 GB de memória RAM na estação de trabalho.
-
-*(Para o detalhamento completo de cada trade-off analisado, consulte [docs/decisões-tecnicas.md](file:///home/gustavo/Documentos/DevOps_local_concept/docs/decisões-tecnicas.md)).*
+   Em vez de acoplar o runner ao sistema operacional do host, o operador do ARC foi implantado dentro do cluster. Os jobs rodam de forma descartável em pods com suporte a Docker-in-Docker (DinD), comunicando-se diretamente com o Harbor e o SonarQube pela rede interna do Kubernetes.
+4. **Hardening com Google Distroless**:
+   A imagem final da aplicação em Go roda sob `gcr.io/distroless/static-debian12:nonroot` (UID `65532`). A ausência de shell e utilitários GNU reduz drasticamente a superfície de ataque e elimina vulnerabilidades de SO no scan do Trivy.
 
 ---
 
-## 🧗 4. Dificuldades Encontradas e Soluções de Engenharia
+## 🧗 4. Dificuldades Encontradas e Soluções Reais
 
-Durante a execução da POC em ambiente puramente local, desafios reais de engenharia surgiram e foram superados:
+A execução deste projeto ocorreu sob forte pressão e impôs desafios práticos significativos, tanto técnicos quanto contextuais:
 
-1. **Containerd e Registries Inseguros (HTTP)**:
-   - *Problema*: O runtime do k3s exigia TLS para puxar imagens do Harbor local na porta 8080.
-   - *Solução*: Criação de rotina de injeção de configuração em `/etc/rancher/k3s/registries.yaml` nos nós do cluster via Docker exec e resolução de hosts mapeados para o IP da interface virtual.
-2. **Reverse Proxy Traefik com Harbor**:
-   - *Problema*: O Harbor realizava redirecionamentos de URL truncando portas ou forçando HTTPS.
-   - *Solução*: Criação de um `Middleware` do Traefik forçando `X-Forwarded-Proto=http` e `X-Forwarded-Port=8080`, além da ativação de `REGISTRY_HTTP_RELATIVEURLS`.
-3. **Requisito de Kernel do Elasticsearch/SonarQube**:
-   - *Problema*: O pod do SonarQube falhava na inicialização por restrição de memória virtual do Linux.
-   - *Solução*: Ajuste no host via `sysctl -w vm.max_map_count=524288`.
-4. **Limite de Anotações em CRDs Grandes no ArgoCD**:
-   - *Problema*: A aplicação de CRDs extensos do Kyverno e Prometheus estourava o limite de 262 KB da anotação `last-applied-configuration`.
-   - *Solução*: Configuração de `ServerSideApply=true` na política de sincronização do ArgoCD.
+### 4.1. Integração com o Harbor e Comunicação Pod-para-Pod no k3d
+* **O Desafio**: O Harbor foi instalado dentro do k3d, mas os runners do ARC e os nós do cluster precisavam se comunicar com o registry local via HTTP sem depender do IP externo ou público da máquina host.
+* **A Complexidade**: O containerd rejeitava requisições HTTP na porta `8080`, e o Traefik forçava redirecionamentos inesperados para HTTPS ou eliminava a porta 8080 nas respostas do Harbor Core.
+* **A Solução**: 
+  - Criação de scripts para injetar o arquivo `/etc/rancher/k3s/registries.yaml` diretamente nos contêineres dos nós k3d.
+  - Criação de um `Middleware` no Traefik forçando `X-Forwarded-Proto: http` e `X-Forwarded-Port: 8080`.
+  - Configuração da variável `REGISTRY_HTTP_RELATIVEURLS=true` nos deployments do Harbor e uso do DNS interno `harbor-core.harbor.svc.cluster.local:80` dentro do pipeline.
 
-*(Para o guia completo passo a passo de resolução de problemas, consulte [docs/troubleshooting.md](file:///home/gustavo/Documentos/DevOps_local_concept/docs/troubleshooting.md)).*
+### 4.2. Curva de Aprendizado e Integração da Stack de Monitoramento
+* **O Desafio**: A falta de experiência prévia profunda na stack do Prometheus Operator, aliada à forma como o k3d isola as redes dos pods, tornou a integração da observabilidade um dos pontos mais desafiadores.
+* **A Complexidade**: Compreender na prática a diferença entre anotações simples (`prometheus.io/scrape`) e o recurso `ServiceMonitor` (que exige a label `release: monitoring` e casamento exato de portas nomeadas), além de entender como o Promtail roda como DaemonSet lendo `/var/log/pods` para enviar ao Loki.
+* **A Solução**: Paradas para leitura detalhada da documentação oficial do Prometheus Operator e da Grafana, resultando na criação de manifestos declarativos dedicados (`service-monitor.yaml`, `alert-rules.yaml` e `loki-datasource.yaml`).
 
----
+### 4.3. Condições Adversas: Prazo Apertado e Estado de Saúde
+* **O Desafio**: O desafio estipulava uma estimativa recomendada de até **16 horas úteis** para cobrir um escopo extenso (Cluster + Ingress + Registry + App Go + Dockerfile + Helm + CI/CD + SAST + Scan + Observabilidade + Políticas + Diferenciais).
+* **Impacto Pessoal**: Durante todo o período de implementação, o autor enfrentou um quadro severo de gripe, exigindo grande esforço de foco e resiliência física para cumprir os requisitos dentro do prazo estipulado.
 
-## 🚀 5. Diferenciais Implementados em Destaque
+### 4.4. Instabilidade e Limitações de Ferramentas de IA (DeepSeek)
+* **O Desafio**: Tentou-se inicialmente acelerar o desenvolvimento com o apoio do modelo DeepSeek, porém a ferramenta frequentemente alucinava sintaxes de manifests Kubernetes, omitia configurações essenciais (como permissões RBAC para o TraefikService no Argo Rollouts e `vm.max_map_count` no SonarQube) ou gerava scripts incompletos.
+* **A Solução**: A dependência da IA gerou rodadas extras de depuração e retrabalho. O autor precisou interromper o fluxo automatizado para pesquisar documentações oficiais, fóruns da comunidade e fontes no Google para encontrar as soluções técnicas corretas e funcionais.
 
-1. **Supply Chain Security com Cosign e Kyverno**:
-   A imagem da aplicação é assinada digitalmente por digest imutável no término do pipeline de CI. Uma `ClusterPolicy` do Kyverno bloqueia terminantemente qualquer tentativa de subir pods que não possuam a assinatura válida da POC.
-2. **GitOps Autônomo com ArgoCD**:
-   O pipeline de CI atualiza a tag do Helm chart no repositório Git com a mensagem `chore(cd): update image tag [skip ci]`. O ArgoCD detecta o commit e reconcilia o estado do cluster sem necessidade de intervenção humana.
-3. **Canary Deployment com Argo Rollouts**:
-   Demonstração prática de divisão de tráfego entre pods estáveis e pods canários, visualizados e controlados pelo painel gráfico do Argo Rollouts em `http://rollouts.local:8080/rollouts`.
-4. **Alertas SRE no Prometheus**:
-   Criação de um `PrometheusRule` declarativo integrado ao Prometheus Operator, disparando alertas de teste validados no ecossistema de observabilidade.
-5. **Hardening de Contêiner com Distroless**:
-   A aplicação roda sem shell, sem gerenciador de pacotes e sob o usuário não-root (UID `65532`), garantindo superfície mínima de ataque.
+### 4.5. Consolidação dos Comandos "Go Horse" Aplicados sob Pressão
+* **O Desafio**: Na urgência de fazer os componentes funcionarem (como desbloquear portas, corrigir permissões do Runner DinD e acertar senhas do SonarQube), muitos comandos de diagnóstico foram aplicados no modo "Go Horse" (ad-hoc diretamente no terminal via `kubectl` e `docker exec`).
+* **A Solução**: Foi necessário um esforço deliberado de engenharia reversa do histórico para rastrear, limpar e empacotar todos os passos dispersos em scripts bash reprodutíveis e idempotentes (`scripts/*.sh`), garantindo que o ambiente possa ser recriado do zero com facilidade.
 
 ---
 
-## 🔮 6. Melhorias Futuras para um Ambiente de Produção
+## 🔮 5. O que Poderia Ser Melhorado (Retrospectiva & Lições Aprendidas)
 
-Em uma transição deste modelo conceitual para um ambiente de produção em escala empresarial, as seguintes evoluções são recomendadas:
+Em uma avaliação crítica do projeto e visando uma evolução para padrões de produção corporativa, os seguintes pontos foram identificados como oportunidades de melhoria:
 
-1. **Gestão Segura de Segredos**:
-   - Substituição de Kubernetes Secrets nativos pelo **External Secrets Operator (ESO)** integrado a cofres como **HashiCorp Vault** ou **AWS Secrets Manager**.
-2. **Evolução para Kubernetes Gateway API**:
-   - Migração dos IngressRoutes proprietários do Traefik para os padrões da nova **Gateway API** do Kubernetes, promovendo portabilidade universal entre provedores de nuvem e controladores de malha.
-3. **Testes de Carga Automatizados (Canary Analysis)**:
-   - Integração do Argo Rollouts com ferramentas de teste de carga (ex: **k6**) e consultas Prometheus (AnalysisTemplates) para validar automaticamente métricas como taxa de erro HTTP 5xx e latência p99 antes de promover o tráfego Canary.
-4. **Geração de SBOM e Atestação com In-Toto**:
-   - Geração automática de Software Bill of Materials (**SBOM**) utilizando **Syft** e atestação criptográfica de procedência com **Cosign/Rekor**.
-5. **Políticas de Backup e Disaster Recovery**:
-   - Implementação do **Velero** com backend em S3 compatível (ex: MinIO local) para backups periódicos do etcd e dos volumes persistentes (PVCs) do Harbor e SonarQube.
-
----
-
-## 📸 7. Galeria de Evidências
-
-Todas as capturas de tela comprovando a instalação, execução e conformidade dos componentes encontram-se armazenadas no diretório `docs/evidencias/`:
-
-### 1. Registry Local (Harbor v2)
-- **Harbor Instalado e Funcional**:
-  ![Harbor Instalado](evidencias/harbour_instalado.png)
-  *Dashboard do Harbor com serviços ativos no namespace `harbor`.*
-- **Harbor Autenticado**:
-  ![Harbor Logado](evidencias/harbour_logado.png)
-  *Interface administrativa do Harbor com projeto `poc` e repositórios configurados.*
+1. **Higiene do Repositório Git (Histórico de Commits)**:
+   - *Cenário Atual*: Devido à velocidade de depuração local e aos múltiplos testes de pipeline disparados para validar o ARC e o ArgoCD, o histórico de commits acumulou mensagens repetidas como "teste", "correcao", "minha-app".
+   - *Melhoria*: Em um fluxo ideal, teria sido realizado um **squash de commits** ou rebase interativo antes da entrega final para consolidar o histórico em commits semânticos (padrão *Conventional Commits*), refletindo apenas as etapas lógicas do projeto.
+2. **Aprofundamento em Políticas de Segurança (NetworkPolicies e PSS)**:
+   - *Melhoria*: Implementar **NetworkPolicies** rigorosas para isolar o tráfego leste-oeste (pod-to-pod) no cluster, garantindo que pods do namespace `default` só se comuniquem com o ingress e com o Prometheus, além de ativar o padrão restritivo dos Pod Security Standards (PSS) em nível de namespace.
+3. **Comunicação Mais Refinada entre Pods**:
+   - *Melhoria*: Adotar o **Cilium** com eBPF no lugar do Flannel padrão do k3s para obter observabilidade em nível de rede (L4/L7) e roteamento de tráfego de alta performance sem iptables.
+4. **Elevação para Nível Production-Grade**:
+   - Mesmo rodando sobre k3d local, a arquitetura pode evoluir para padrões corporativos:
+     - Gestão segura de segredos com **External Secrets Operator (ESO)** integrado a um cofre como **HashiCorp Vault**.
+     - Emissão automatizada de certificados TLS internos via **cert-manager**.
+     - Separação de branches no Git (`dev` e `main`) sincronizadas com namespaces distintos no ArgoCD (`staging` e `production`).
 
 ---
 
-### 2. Análise Estática de Código (SonarQube)
-- **SonarQube em Execução**:
-  ![SonarQube](evidencias/sonarQube.png)
-  *SonarQube Community com banco de dados PostgreSQL externo operando no cluster.*
+## 📸 6. Galeria de Evidências
+
+As evidências que comprovam a instalação e funcionamento de todos os componentes da POC estão disponíveis na pasta `docs/evidencias/`:
+
+| Componente | Arquivo de Evidência | O que comprova |
+| :--- | :--- | :--- |
+| **Harbor Registry** | `docs/evidencias/harbour_instalado.png`<br>`docs/evidencias/harbour_logado.png` | Harbor instalado, funcional e autenticado com o projeto `poc` e robôs ativos. |
+| **SonarQube (SAST)** | `docs/evidencias/sonarQube.png` | Instância do SonarQube Community operando e analisando o código da aplicação. |
+| **Actions Runner (ARC)**| `docs/evidencias/arc-em-funcionamento.png` | Pods do runner ARC ativos e executando os jobs do GitHub Actions no k3d. |
+| **ArgoCD (GitOps)** | `docs/evidencias/argocd_instalado.png`<br>`docs/evidencias/argocd_logado.png`<br>`docs/evidencias/argocd-com-minha-app.png` | Painel do ArgoCD saudável com as aplicações sincronizadas e gerenciadas declarativamente. |
+| **Aplicação Web** | `docs/evidencias/minha-app-funcionando.png` | Aplicação web Go respondendo com sucesso na rota raiz via Ingress. |
 
 ---
 
-### 3. Execução de CI/CD (Actions Runner Controller)
-- **ARC em Funcionamento**:
-  ![ARC em Funcionamento](evidencias/arc-em-funcionamento.png)
-  *Runners efêmeros gerenciados pelo operador ARC executando jobs do GitHub Actions.*
+## 🏁 7. Parecer Final e Conclusão
 
----
+A Prova de Conceito atinge **100% dos objetivos técnicos** estipulados no edital, comprovando domínio prático em arquitetura Kubernetes, automação de esteiras CI/CD seguras, GitOps, deploy progressivo e observabilidade. 
 
-### 4. GitOps e Entrega Contínua (ArgoCD)
-- **ArgoCD Instalado**:
-  ![ArgoCD Instalado](evidencias/argocd_instalado.png)
-  *Pods e serviços do ArgoCD rodando em estado Healthy.*
-- **ArgoCD Autenticado**:
-  ![ArgoCD Logado](evidencias/argocd_logado.png)
-  *Acesso ao painel administrativo do ArgoCD.*
-- **Aplicação Sincronizada no ArgoCD**:
-  ![ArgoCD com Minha App](evidencias/argocd-com-minha-app.png)
-  *Aplicação `minha-app` em sincronismo perfeito (`Synced / Healthy`) gerenciada via GitOps.*
-- **Detalhes dos Recursos da Aplicação no ArgoCD**:
-  ![ArgoCD Minha App Detalhes](evidencias/argocd-minha-app.png)
-  *Árvore de recursos do Rollout, Services e Ingress no ArgoCD.*
-
----
-
-### 5. Aplicação em Execução
-- **Minha App Respondendo via Ingress**:
-  ![Minha App Funcionando](evidencias/minha-app-funcionando.png)
-  *Aplicação web Go respondendo com sucesso através do domínio local.*
-
----
-
-## 🏁 8. Conclusão
-
-A Prova de Conceito comprovou com êxito a viabilidade e a maturidade de um ecossistema DevOps completo rodando localmente. O ambiente não apenas atendeu aos critérios estritos de avaliação do desafio técnico, como também estabeleceu um modelo de excelência arquitetural combinando segurança rigorosa, automação de ponta a ponta e observabilidade corporativa.
+Apesar de todas as restrições de tempo, saúde e contratempos de ferramentas, o resultado é um ecossistema sólido, reproduzível e alinhado às melhores práticas contemporâneas da engenharia de software e DevOps.

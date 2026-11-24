@@ -126,14 +126,25 @@ echo "127.0.0.1 minha-app.local harbor.local argocd.local sonar.local rollouts.l
 
 ### Opção 1: Setup da Stack de Monitoramento (Se o cluster já estiver rodando)
 ```bash
-cd IA_output/monitoramento
-./install-monitoring.sh
-./test-monitoring.sh
+./scripts/install-monitoring.sh
+./scripts/test-monitoring.sh
 ```
 
 ---
 
-### Opção 2: Setup Completo do Zero (Passo a Passo)
+### Opção 2: Setup Automatizado de Toda a Infraestrutura (Bootstrap)
+```bash
+chmod +x scripts/*.sh
+
+# (Opcional) Configure seu PAT do GitHub para o ARC runner se desejar rodar o CI:
+export GITHUB_PAT="seu_token"
+
+./scripts/bootstrap.sh
+```
+
+---
+
+### Opção 3: Setup Completo do Zero (Passo a Passo)
 
 #### 1. Criar o Cluster k3d com Portas Mapeadas
 ```bash
@@ -168,8 +179,7 @@ cd IA_output/monitoramento
 
 #### 7. Instalar a Stack de Monitoramento (Prometheus + Grafana + Loki)
 ```bash
-cd IA_output/monitoramento
-./install-monitoring.sh
+./scripts/install-monitoring.sh
 ```
 
 #### 8. Ativar Aplicações GitOps no ArgoCD
@@ -267,6 +277,18 @@ helm rollback minha-app <REVISAO> -n default
 ## 🔧 Troubleshooting Rápido
 
 Para problemas conhecidos de ambiente local (containerd HTTP, redirects do Harbor, `vm.max_map_count` do SonarQube, etc.), consulte o guia completo em [docs/troubleshooting.md](file:///home/gustavo/Documentos/DevOps_local_concept/docs/troubleshooting.md).
+
+---
+
+## 📚 Documentação Técnica e Relatórios
+
+Toda a documentação aprofundada exigida pelo edital e detalhando a arquitetura encontra-se organizada na pasta `docs/`:
+
+* [docs/relatorio-final.md](file:///home/gustavo/Documentos/DevOps_local_concept/docs/relatorio-final.md): **Relatório Final da POC** contendo a matriz de conformidade (100% dos requisitos + 4 diferenciais), decisões técnicas, dificuldades reais enfrentadas e retrospectiva/lições aprendidas.
+* [docs/arquitetura.md](file:///home/gustavo/Documentos/DevOps_local_concept/docs/arquitetura.md): **Especificação da Arquitetura** com diagramas Mermaid, mapeamento de DNS/portas e matriz de componentes.
+* [docs/decisões-tecnicas.md](file:///home/gustavo/Documentos/DevOps_local_concept/docs/decisões-tecnicas.md): **Justificativas Técnicas** comparando k3d vs Kind, Harbor vs Nexus, OPA vs Kyverno, Distroless e ARC.
+* [docs/troubleshooting.md](file:///home/gustavo/Documentos/DevOps_local_concept/docs/troubleshooting.md): **Manual de Troubleshooting** com diagnósticos práticos, soluções para os problemas enfrentados e comandos de emergência.
+* [docs/evidencias/](file:///home/gustavo/Documentos/DevOps_local_concept/docs/evidencias/): **Galeria de Evidências** com capturas de tela comprovatórias de cada componente em funcionamento.
 
 ---
 
