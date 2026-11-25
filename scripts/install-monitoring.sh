@@ -1,4 +1,8 @@
-#!/usr/bin/env bash
+# ⚠️ DEPRECATED: use ArgoCD (apps/monitoring.yaml + apps/loki.yaml).
+# Este script causará conflito de ownership se o ArgoCD estiver ativo.
+# Mantido apenas como referência de bootstrap offline.
+
+#####!/usr/bin/env bash
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

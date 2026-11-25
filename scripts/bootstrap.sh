@@ -6,7 +6,7 @@ chmod +x scripts/*.sh
 ./scripts/install-sonarqube.sh
 ./scripts/install-argocd.sh
 ./scripts/install-rollouts.sh
-./scripts/install-monitoring.sh
+#./scripts/install-monitoring.sh
 
 # ARC (exporte as variáveis antes)
 export GITHUB_APP_ID="..."
