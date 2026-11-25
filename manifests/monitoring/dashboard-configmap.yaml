@@ -141,8 +141,7 @@ data:
             "wrapLogMessage": true
           },
           "targets": [
-            { "datasource": { "type": "loki", "uid": "Loki" }, "editorMode": "code", "expr": "{namespace=\"default\"} |= \"minha-app\"", "queryType": "range", "refId": "A" }
-          ],
+            { "datasource": { "type": "loki", "uid": "Loki" }, "editorMode": "code", "expr": "{namespace=\"default\", app=\"minha-app\"}", "queryType": "range", "refId": "A" }
           "title": "Últimos Logs da Aplicação (Loki Stream)",
           "type": "logs"
         }
