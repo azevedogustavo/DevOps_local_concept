@@ -124,8 +124,7 @@ prometheus:
         memory: 256Mi
       limits:
         cpu: 500m
-        memory: 768Mi
-
+        memory: 2Gi 
 kubeStateMetrics:
   enabled: true
 
