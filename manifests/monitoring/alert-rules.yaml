@@ -32,13 +32,13 @@ spec:
             summary: "A aplicação Minha-App está fora do ar!"
             description: "O Prometheus não consegue realizar o scrape do endpoint /metrics da aplicação há mais de 30 segundos."
 
-        # Alerta 3: Queda no Tráfego ou Alta Latência
+        # Alerta 3: Queda no Tráfego Geral da Aplicação
         - alert: MinhaAppSemRequisicoes
-          expr: rate(http_requests_total[5m]) == 0
-          for: 5m
+          expr: sum(rate(http_requests_total[2m])) == 0
+          for: 2m
           labels:
             severity: info
             app: minha-app
           annotations:
-            summary: "Nenhuma requisição recebida nos últimos 5 minutos"
-            description: "A aplicação Minha-App não está registrando tráfego HTTP no contador http_requests_total."
+            summary: "Nenhuma requisição recebida na aplicação nos últimos 2 minutos"
+            description: "A soma total de requisições HTTP da aplicação Minha-App está em zero nos últimos 2 minutos."
