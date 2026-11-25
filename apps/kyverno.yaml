@@ -5,23 +5,42 @@ metadata:
   namespace: argocd
 spec:
   project: default
-  source:
-    repoURL: https://kyverno.github.io/kyverno
-    chart: kyverno
-    targetRevision: 3.5.2
-    helm:
-      values: |
-        admissionController:
-          replicas: 1
-          container:
-            extraArgs:
-              allowInsecureRegistry: true
-        backgroundController:
-          replicas: 1
-        cleanupController:
-          replicas: 1
-        reportsController:
-          replicas: 1
+  sources:
+    # Fonte 1: Helm Chart oficial do Kyverno
+    - repoURL: https://github.io
+      chart: kyverno
+      targetRevision: 3.5.2
+      helm:
+        values: |
+          admissionController:
+            replicas: 1
+            container:
+              extraArgs:
+                allowInsecureRegistry: true
+          backgroundController:
+            replicas: 1
+          cleanupController:
+            replicas: 1
+          reportsController:
+            replicas: 1
+          # Corrige o ImagePullBackOff do job kyverno-clean-reports (bitnami/kubectl)
+          cleanupJobs:
+            admissionReports:
+              image:
+                registry: registry.k8s.io
+                repository: kubectl
+                tag: v1.30.2
+            clusterAdmissionReports:
+              image:
+                registry: registry.k8s.io
+                repository: kubectl
+                tag: v1.30.2
+
+    # Fonte 2: Políticas customizadas do repositório (verify-signed-images.yaml)
+    - repoURL: https://github.com/azevedogustavo/DevOps_local_concept.git
+      targetRevision: main
+      path: manifests/policies/kyverno
+
   destination:
     server: https://kubernetes.default.svc
     namespace: kyverno
