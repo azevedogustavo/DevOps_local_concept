@@ -10,7 +10,8 @@ spec:
     targetRevision: main
     path: manifests/policies/opa
   destination:
-    server: https://default.svc
+    server: https://kubernetes.default.svc
+    namespace: default
   syncPolicy:
     automated:
       prune: true

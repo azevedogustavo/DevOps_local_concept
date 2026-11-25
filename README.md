@@ -203,7 +203,6 @@ Com o `/etc/hosts` configurado, acesse as ferramentas via navegador na porta `80
 | **Harbor Registry** | [http://harbor.local:8080](http://harbor.local:8080) | `admin` | `Harbor12345` | Registry local privado OCI |
 | **SonarQube** | [http://sonar.local:8080](http://sonar.local:8080) | `admin` | `Son@r12345!Admin` | Análise estática de código (SAST) |
 | **ArgoCD** | [http://argocd.local:8080](http://argocd.local:8080) | `admin` | *(ver segredo abaixo)* | Dashboard GitOps |
-| **Argo Rollouts** | [http://rollouts.local:8080/rollouts](http://rollouts.local:8080/rollouts) | — | — | Visualização do deploy Canary |
 | **Grafana** | [http://grafana.local:8080](http://grafana.local:8080) | `admin` | `admin` | Dashboards de métricas e logs |
 | **Prometheus** | [http://prometheus.local:8080](http://prometheus.local:8080) | — | — | Interface de queries e alertas |
 | **Alertmanager** | [http://alertmanager.local:8080](http://alertmanager.local:8080) | — | — | Gestão de alertas ativos |
