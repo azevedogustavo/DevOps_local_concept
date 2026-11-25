@@ -5,7 +5,7 @@ rollout:
 
 image:
   repository: harbor-core.harbor.svc.cluster.local:80/poc/minha-app
-  tag: "4c1817e"
+  tag: "269773d"
   pullPolicy: IfNotPresent
 
 imagePullSecrets:
